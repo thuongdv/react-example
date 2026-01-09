@@ -1,0 +1,10 @@
+FROM haproxy:2.8-alpine
+
+# Copy HAProxy configuration
+COPY haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
+
+# Expose port
+EXPOSE 80 443
+
+# Run HAProxy
+CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]

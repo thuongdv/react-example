@@ -1,0 +1,10 @@
+name: iac-react-example
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+description: use nginx to server the web application and ECS for container orchestration. The ECS and container use the Fargate.
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: https://www.pulumi.com/ai/api/project/385f6b57-9ce1-4ef1-ad76-5eb6a1001f06.zip

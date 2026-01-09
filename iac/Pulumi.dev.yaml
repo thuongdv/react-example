@@ -1,0 +1,4 @@
+config:
+  aws:region: us-east-1
+  iac:serviceName: react-service
+  iac:environmentName: dev

@@ -1,0 +1,14 @@
+{
+  "name": "iac-react-example",
+  "description": "use nginx to server the web application and ECS for container orchestration. The ECS and container use the Fargate.",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "dependencies": {
+    "@pulumi/pulumi": "*",
+    "@pulumi/aws": "6.13.3",
+    "@pulumi/awsx": "2.10.0"
+  }
+}
