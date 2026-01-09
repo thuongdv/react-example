@@ -38,10 +38,12 @@ export function createEcsCluster(
 
   const cluster = new aws.ecs.Cluster(clusterName, {
     name: clusterName,
-    settings: {
-      name: "containerInsights",
-      value: "enabled",
-    },
+    settings: [
+      {
+        name: "containerInsights",
+        value: "enabled",
+      },
+    ],
     tags: {
       Name: clusterName,
       ...config.tags,

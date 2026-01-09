@@ -28,8 +28,7 @@ export class ReactService extends Service {
       name: "react-app-cluster",
     });
 
-    const clusterCapacityProviders =
-      createEcsClusterCapacityProviders(ecsCluster);
+    createEcsClusterCapacityProviders(ecsCluster);
 
     // Step 4: Deploy HAProxy Service (Fargate - Public Subnets)
     const haproxyImageUri = this.pulumiConfig.get("haproxy-image-uri")
@@ -72,7 +71,7 @@ export class ReactService extends Service {
     });
 
     // Get HAProxy service details for public access
-    const haproxyServiceDetails = pulumi
+    pulumi
       .all([haproxyService.id, ecsCluster.arn])
       .apply(([serviceId, clusterArn]) => {
         return aws.ecs.getService({
