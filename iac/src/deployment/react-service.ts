@@ -14,7 +14,7 @@ export class ReactService extends Service {
     // Step 1: Create VPC with public and private subnets
     const vpcResources = createVpc({
       cidrBlock: "10.0.0.0/16",
-      azCount: 2,
+      azCount: 1,
     });
 
     // Step 2: Create ECR repositories
@@ -43,7 +43,7 @@ export class ReactService extends Service {
       containerPort: 80,
       containerMemory: 512,
       containerCpu: 256,
-      desiredCount: 2,
+      desiredCount: 1,
       subnets: vpcResources.publicSubnets.map((s) => s.id),
       securityGroups: [vpcResources.publicSecurityGroup.id],
       assignPublicIp: true,
@@ -63,7 +63,7 @@ export class ReactService extends Service {
       containerPort: 80,
       containerMemory: 512,
       containerCpu: 256,
-      desiredCount: 2,
+      desiredCount: 1,
       subnets: vpcResources.privateSubnets.map((s) => s.id),
       securityGroups: [vpcResources.privateSecurityGroup.id],
       assignPublicIp: false,

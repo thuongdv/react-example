@@ -77,7 +77,7 @@ export function createVpc(config: VpcConfig = {}): VpcResources {
 
   // Create Elastic IP for NAT Gateway
   const eip = new aws.ec2.Eip("nat-eip", {
-    vpc: true,
+    domain: "vpc",
     tags: {
       Name: "react-app-nat-eip",
     },
