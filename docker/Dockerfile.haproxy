@@ -1,7 +1,7 @@
 FROM haproxy:2.8-alpine
 
 # Copy HAProxy configuration
-COPY haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
+COPY docker/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 
 # Expose port
 EXPOSE 80 443
