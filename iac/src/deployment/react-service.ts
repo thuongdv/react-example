@@ -33,7 +33,7 @@ export class ReactService extends Service {
     // Step 4: Deploy HAProxy Service (Fargate - Public Subnets)
     const haproxyImageUri = this.pulumiConfig.get("haproxy-image-uri")
       ? this.pulumiConfig.get("haproxy-image-uri")!
-      : pulumi.interpolate`${ecrResources.haproxyRepo.repositoryUrl}:latest`;
+      : "haproxy:3.3.1-alpine";
 
     const haproxyService = createEcsService({
       clusterName: ecsCluster.name,
@@ -53,7 +53,7 @@ export class ReactService extends Service {
     // Step 5: Deploy Nginx Service (Fargate - Private Subnets)
     const nginxImageUri = this.pulumiConfig.get("nginx-image-uri")
       ? this.pulumiConfig.get("nginx-image-uri")!
-      : pulumi.interpolate`${ecrResources.nginxRepo.repositoryUrl}:latest`;
+      : "nginx:1.29.4-alpine";
 
     const nginxService = createEcsService({
       clusterName: ecsCluster.name,
