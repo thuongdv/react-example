@@ -20,6 +20,7 @@ interface EcsServiceConfig {
   assignPublicIp?: boolean;
   enableLogging?: boolean;
   cloudwatchLogGroup?: aws.cloudwatch.LogGroup;
+  serviceRegistryArn?: pulumi.Input<string>;
 }
 
 export interface EcsResources {
@@ -68,7 +69,15 @@ export function createEcsClusterCapacityProviders(
     ],
   });
 }
-
+export function createServiceDiscoveryNamespace(
+  vpcId: pulumi.Input<string>
+): aws.servicediscovery.PrivateDnsNamespace {
+  return new aws.servicediscovery.PrivateDnsNamespace("react-app-namespace", {
+    name: "react-app.local",
+    vpc: vpcId,
+    description: "Service discovery namespace for React app services",
+  });
+}
 export function createTaskRole(roleName: string): aws.iam.Role {
   const role = new aws.iam.Role(roleName, {
     name: roleName,
@@ -201,7 +210,7 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
   );
 
   // Create the service
-  const service = new aws.ecs.Service(config.serviceName, {
+  const serviceConfig: any = {
     name: config.serviceName,
     cluster: config.clusterArn,
     taskDefinition: taskDefinition.arn,
@@ -215,7 +224,18 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
     tags: {
       Name: `${config.serviceName}-service`,
     },
-  });
+  };
+
+  // Add service registry if provided
+  if (config.serviceRegistryArn) {
+    serviceConfig.serviceRegistries = [
+      {
+        registryArn: config.serviceRegistryArn,
+      },
+    ];
+  }
+
+  const service = new aws.ecs.Service(config.serviceName, serviceConfig);
 
   return service;
 }

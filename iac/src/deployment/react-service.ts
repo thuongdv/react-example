@@ -5,6 +5,7 @@ import {
   createEcsCluster,
   createEcsClusterCapacityProviders,
   createEcsService,
+  createServiceDiscoveryNamespace,
 } from "../cloud/aws/ecs";
 import { createVpc } from "../cloud/aws/vpc";
 import { Service } from "./service";
@@ -23,14 +24,40 @@ export class ReactService extends Service {
       nginx: { imageName: "react-app-nginx" },
     });
 
-    // Step 3: Create ECS Cluster
+    // Step 3: Create Service Discovery Namespace
+    const serviceDiscoveryNamespace = createServiceDiscoveryNamespace(
+      vpcResources.vpc.id
+    );
+
+    // Step 4: Create ECS Cluster
     const ecsCluster = createEcsCluster({
       name: "react-app-cluster",
     });
 
     createEcsClusterCapacityProviders(ecsCluster);
 
-    // Step 4: Deploy HAProxy Service (Fargate - Public Subnets)
+    // Step 5: Create Service Discovery Service for Nginx
+    const nginxServiceDiscovery = new aws.servicediscovery.Service(
+      "nginx-discovery",
+      {
+        name: "nginx",
+        dnsConfig: {
+          namespaceId: serviceDiscoveryNamespace.id,
+          dnsRecords: [
+            {
+              ttl: 10,
+              type: "A",
+            },
+          ],
+          routingPolicy: "MULTIVALUE",
+        },
+        healthCheckCustomConfig: {
+          failureThreshold: 1,
+        },
+      }
+    );
+
+    // Step 6: Deploy HAProxy Service (Fargate - Public Subnets)
     const haproxyImageUri = this.pulumiConfig.get("haproxy-image-uri")
       ? this.pulumiConfig.get("haproxy-image-uri")!
       : "haproxy:3.3.1-alpine";
@@ -50,7 +77,7 @@ export class ReactService extends Service {
       enableLogging: true,
     });
 
-    // Step 5: Deploy Nginx Service (Fargate - Private Subnets)
+    // Step 7: Deploy Nginx Service (Fargate - Private Subnets)
     const nginxImageUri = this.pulumiConfig.get("nginx-image-uri")
       ? this.pulumiConfig.get("nginx-image-uri")!
       : "nginx:1.29.4-alpine";
@@ -68,7 +95,18 @@ export class ReactService extends Service {
       securityGroups: [vpcResources.privateSecurityGroup.id],
       assignPublicIp: false,
       enableLogging: true,
+      serviceRegistryArn: nginxServiceDiscovery.arn,
     });
+
+    // Get HAProxy service details for public access
+    pulumi
+      .all([haproxyService.id, ecsCluster.arn])
+      .apply(([serviceId, clusterArn]) => {
+        return aws.ecs.getService({
+          serviceName: serviceId,
+          clusterArn: clusterArn,
+        });
+      });
 
     // Get HAProxy service details for public access
     pulumi
@@ -82,6 +120,8 @@ export class ReactService extends Service {
 
     // Export important outputs
     return {
+      serviceDiscoveryNamespaceId: serviceDiscoveryNamespace.id,
+      nginxServiceDiscoveryDns: pulumi.interpolate`nginx.react-app.local`,
       vpcId: vpcResources.vpc.id,
       clusterName: ecsCluster.name,
       haproxyServiceName: haproxyService.name,
