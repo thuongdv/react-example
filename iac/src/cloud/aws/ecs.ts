@@ -228,11 +228,9 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
 
   // Add service registry if provided
   if (config.serviceRegistryArn) {
-    serviceConfig.serviceRegistries = [
-      {
-        registryArn: config.serviceRegistryArn,
-      },
-    ];
+    serviceConfig.serviceRegistries = {
+      registryArn: config.serviceRegistryArn,
+    };
   }
 
   const service = new aws.ecs.Service(config.serviceName, serviceConfig);
