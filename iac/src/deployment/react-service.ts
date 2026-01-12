@@ -20,8 +20,8 @@ export class ReactService extends Service {
 
     // Step 2: Create ECR repositories
     const ecrResources = createEcrRepositories({
-      haproxy: { imageName: "react-app-haproxy" },
-      nginx: { imageName: "react-app-nginx" },
+      haproxy: { imageName: "react-app-haproxy", forceDelete: true },
+      nginx: { imageName: "react-app-nginx", forceDelete: true },
     });
 
     // Step 3: Create Service Discovery Namespace
@@ -51,9 +51,7 @@ export class ReactService extends Service {
           ],
           routingPolicy: "MULTIVALUE",
         },
-        healthCheckCustomConfig: {
-          failureThreshold: 1,
-        },
+        healthCheckCustomConfig: {},
       }
     );
 
