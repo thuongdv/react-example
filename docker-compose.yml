@@ -1,0 +1,26 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nginx
+    container_name: react-app-nginx
+    expose:
+      - "80"
+    networks:
+      - react-app-network
+
+  haproxy:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.haproxy.local
+    container_name: react-app-haproxy
+    ports:
+      - "8080:80"
+    depends_on:
+      - nginx
+    networks:
+      - react-app-network
+
+networks:
+  react-app-network:
+    driver: bridge
