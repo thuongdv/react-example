@@ -19,6 +19,7 @@ export function createEcrRepositories(config: {
   const nginxConfig = config.nginx || { imageName: "nginx" };
 
   const haproxyRepo = new aws.ecr.Repository(haproxyConfig.imageName, {
+    name: haproxyConfig.imageName,
     imageScanningConfiguration: {
       scanOnPush: true,
     },
@@ -31,6 +32,7 @@ export function createEcrRepositories(config: {
   });
 
   const nginxRepo = new aws.ecr.Repository(nginxConfig.imageName, {
+    name: nginxConfig.imageName,
     imageScanningConfiguration: {
       scanOnPush: true,
     },
