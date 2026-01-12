@@ -3,6 +3,7 @@ import * as aws from "@pulumi/aws";
 interface EcrRepoConfig {
   imageName: string;
   tags?: { [key: string]: string };
+  forceDelete?: boolean;
 }
 
 export interface EcrResources {
@@ -26,6 +27,7 @@ export function createEcrRepositories(config: {
       Name: `react-app-${haproxyConfig.imageName}`,
       ...haproxyConfig.tags,
     },
+    forceDelete: haproxyConfig.forceDelete || false,
   });
 
   const nginxRepo = new aws.ecr.Repository(nginxConfig.imageName, {
@@ -37,6 +39,7 @@ export function createEcrRepositories(config: {
       Name: `react-app-${nginxConfig.imageName}`,
       ...nginxConfig.tags,
     },
+    forceDelete: nginxConfig.forceDelete || false,
   });
 
   return {
