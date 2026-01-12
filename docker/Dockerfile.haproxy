@@ -1,10 +1,13 @@
-FROM haproxy:2.8-alpine
+FROM haproxy:3.3.1-alpine
 
 # Copy HAProxy configuration
 COPY docker/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 
 # Expose port
 EXPOSE 80 443
+
+# Run as root to allow binding to port 80
+USER root
 
 # Run HAProxy
 CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]

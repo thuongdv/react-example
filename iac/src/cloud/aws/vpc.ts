@@ -153,6 +153,12 @@ export function createVpc(config: VpcConfig = {}): VpcResources {
         toPort: 443,
         cidrBlocks: ["0.0.0.0/0"],
       },
+      {
+        protocol: "udp",
+        fromPort: 53,
+        toPort: 53,
+        cidrBlocks: ["0.0.0.0/0"],
+      },
     ],
     egress: [
       {
@@ -183,6 +189,12 @@ export function createVpc(config: VpcConfig = {}): VpcResources {
         fromPort: 443,
         toPort: 443,
         securityGroups: [publicSecurityGroup.id],
+      },
+      {
+        protocol: "udp",
+        fromPort: 53,
+        toPort: 53,
+        cidrBlocks: [cidrBlock],
       },
     ],
     egress: [
