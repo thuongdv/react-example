@@ -15,11 +15,11 @@ services:
       dockerfile: docker/Dockerfile.haproxy.local
     container_name: react-app-haproxy
     ports:
-      - "8080:80"
+      - "8080:8080"
     depends_on:
       - nginx
     networks:
-      - react-app-network
+        - react-app-network
 
 networks:
   react-app-network:
