@@ -193,9 +193,9 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
               : '"logDriver": "awsfirelens"'
           },
           "healthCheck": {
-            "command": ["CMD-SHELL", "curl -f http://localhost:${
+            "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:${
               config.containerPort
-            }/haproxy-stats || exit 1"],
+            }/health || exit 1"],
             "interval": 30,
             "timeout": 10,
             "retries": 5,
