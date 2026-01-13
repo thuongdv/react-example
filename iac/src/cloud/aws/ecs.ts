@@ -195,11 +195,11 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
           "healthCheck": {
             "command": ["CMD-SHELL", "curl -f http://localhost:${
               config.containerPort
-            }/ || exit 1"],
+            }/haproxy-stats || exit 1"],
             "interval": 30,
-            "timeout": 5,
-            "retries": 3,
-            "startPeriod": 60
+            "timeout": 10,
+            "retries": 5,
+            "startPeriod": 120
           }
         }
       ]`,

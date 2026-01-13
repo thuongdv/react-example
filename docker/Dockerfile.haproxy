@@ -7,4 +7,4 @@ COPY docker/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 EXPOSE 8080
 
 # Run HAProxy
-CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg", "-db"]

@@ -154,6 +154,12 @@ export function createVpc(config: VpcConfig = {}): VpcResources {
         cidrBlocks: ["0.0.0.0/0"],
       },
       {
+        protocol: "tcp",
+        fromPort: 8080,
+        toPort: 8080,
+        cidrBlocks: ["0.0.0.0/0"],
+      },
+      {
         protocol: "udp",
         fromPort: 53,
         toPort: 53,
