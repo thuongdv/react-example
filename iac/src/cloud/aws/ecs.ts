@@ -69,6 +69,7 @@ export function createEcsClusterCapacityProviders(
     ],
   });
 }
+
 export function createServiceDiscoveryNamespace(
   vpcId: pulumi.Input<string>
 ): aws.servicediscovery.PrivateDnsNamespace {
@@ -78,6 +79,7 @@ export function createServiceDiscoveryNamespace(
     description: "Service discovery namespace for React app services",
   });
 }
+
 export function createTaskRole(roleName: string): aws.iam.Role {
   const role = new aws.iam.Role(roleName, {
     name: roleName,
