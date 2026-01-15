@@ -118,23 +118,19 @@ jobs:
       - name: Build and push ${{ matrix.service.name }} image
         if: steps.dockerfile-check.outputs.changed == 'true'
         env:
-          IMAGE_TAG: ${{ github.sha }}
           PULUMI_STACK: ${{ env.PULUMI_STACK }}
           AWS_REGION: ${{ env.AWS_REGION }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
           chmod +x ${{ matrix.service.script }}
-          IMAGE_TAG=${IMAGE_TAG:0:8} ${{ matrix.service.script }}
-          # Also push with "latest" tag
-          IMAGE_TAG=latest ${{ matrix.service.script }}
+          IMAGE_TAG=${GITHUB_SHA:0:7} ${{ matrix.service.script }}
 
       - name: Notify on failure
         if: failure()
         run: |
-          echo "Failed to build and push ${{ matrix.service.name }} image"
+          echo "Failed to build and push ${{ matrix.service.name }} image with tag: ${GITHUB_SHA:0:7}"
 
       - name: Notify on success
         if: success()
         run: |
-          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${{ github.sha }}"
-          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: latest"
+          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${GITHUB_SHA:0:7}"
