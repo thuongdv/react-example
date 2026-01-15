@@ -23,13 +23,45 @@ The workflow runs when:
 
 Set up GitHub OIDC trust relationship with AWS so the workflow can authenticate without static credentials:
 
-```bash
-# In your AWS account, create an OIDC provider and IAM role
-# Or use the Pulumi-created resources if already configured
+#### Step 1: Create the GitHub OIDC Provider (One-time per AWS account)
 
-# Example: Create IAM role with trust policy for GitHub Actions
+Before creating the IAM role, you need to set up the GitHub OIDC identity provider in AWS. You can do this via the AWS Console or CLI:
+
+**Using AWS CLI:**
+
+```bash
+aws iam create-open-id-connect-provider \
+  --url "https://token.actions.githubusercontent.com" \
+  --client-id-list "sts.amazonaws.com" \
+  --thumbprint-list "6938fd4d98bab03faadb97b34396831e3780aea1"
+```
+
+This creates an OIDC provider with an ARN like:
+`arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com`
+
+**Using AWS Console:**
+
+Follow the AWS documentation: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html
+
+**Note:** If your Pulumi stack already creates this OIDC provider, you can reuse that existing provider and skip this step.
+
+#### Step 2: Create IAM Role with Trust Policy
+
+**Important:** Before running these commands, update the policy files with your actual values:
+
+1. In `iac/trust-policy.json`:
+   - Replace `ACCOUNT_ID` with your AWS account ID
+   - Replace `<github-owner>/<github-repo>` with your GitHub repository (e.g., `thuongdv/react-example`)
+
+2. In `iac/ecr-push-policy.json`:
+   - Replace `REGION` with your AWS region (e.g., `us-east-1`)
+   - Replace `ACCOUNT_ID` with your AWS account ID
+
+```bash
+# From the iac directory
 cd iac
 
+# Create IAM role with trust policy for GitHub Actions
 aws iam create-role \
   --role-name github-actions-ecr-push \
   --assume-role-policy-document file://trust-policy.json
@@ -41,7 +73,7 @@ aws iam put-role-policy \
   --policy-document file://ecr-push-policy.json
 ```
 
-**Trust Policy Example** (`trust-policy.json`):
+**Trust Policy Template** (`trust-policy.json`):
 
 ```json
 {
@@ -58,7 +90,7 @@ aws iam put-role-policy \
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:thuongdv/react-example:*"
+          "token.actions.githubusercontent.com:sub": "repo:<github-owner>/<github-repo>:*"
         }
       }
     }
@@ -66,7 +98,9 @@ aws iam put-role-policy \
 }
 ```
 
-**IAM Policy** (ECR access):
+**IAM Policy Template** (ECR access - `ecr-push-policy.json`):
+
+Note: This policy follows the principle of least privilege by restricting ECR operations to repositories matching the pattern `react-app-*`. The `ecr:GetAuthorizationToken` action requires `"Resource": "*"` as it doesn't support resource-level permissions.
 
 ```json
 {
@@ -75,7 +109,6 @@ aws iam put-role-policy \
     {
       "Effect": "Allow",
       "Action": [
-        "ecr:GetAuthorizationToken",
         "ecr:BatchCheckLayerAvailability",
         "ecr:GetDownloadUrlForLayer",
         "ecr:PutImage",
@@ -84,6 +117,11 @@ aws iam put-role-policy \
         "ecr:CompleteLayerUpload",
         "ecr:DescribeRepositories"
       ],
+      "Resource": "arn:aws:ecr:REGION:ACCOUNT_ID:repository/react-app-*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ecr:GetAuthorizationToken"],
       "Resource": "*"
     },
     {
