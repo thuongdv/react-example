@@ -121,6 +121,7 @@ jobs:
           PULUMI_STACK: ${{ env.PULUMI_STACK }}
           AWS_REGION: ${{ env.AWS_REGION }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           chmod +x ${{ matrix.service.script }}
           IMAGE_TAG=${GITHUB_SHA:0:7} ${{ matrix.service.script }}
@@ -128,9 +129,11 @@ jobs:
       - name: Notify on failure
         if: failure()
         run: |
-          echo "Failed to build and push ${{ matrix.service.name }} image with tag: ${GITHUB_SHA:0:7}"
+          SHORT_SHA="${{ github.sha }}"
+          echo "Failed to build and push ${{ matrix.service.name }} image with tag: ${SHORT_SHA:0:7}"
 
       - name: Notify on success
         if: success()
         run: |
-          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${GITHUB_SHA:0:7}"
+          SHORT_SHA="${{ github.sha }}"
+          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${SHORT_SHA:0:7}"
