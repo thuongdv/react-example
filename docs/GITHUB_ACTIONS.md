@@ -264,6 +264,6 @@ IMAGE_TAG=$IMAGE_TAG DOCKER_HUB_PUSH=true ${{ matrix.service.script }}
 
 ## Related Documentation
 
-- [Build and Push Custom Images](../docs/BUILD_PUSH_CUSTOME_IMAGE.MD)
+- [Build and Push Custom Images](../docs/BUILD_PUSH_CUSTOM_IMAGE.MD)
 - [Local Development](../docs/LOCAL_DEVELOPMENT.md)
 - [Architecture](../docs/ARCHITECTURE_UPDATE.md)

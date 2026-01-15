@@ -20,6 +20,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
+  PULUMI_STACK: thuongdv/iac-react-example/dev
 
 jobs:
   build-and-push:
@@ -76,7 +77,7 @@ jobs:
         if: steps.dockerfile-check.outputs.changed == 'true'
         env:
           IMAGE_TAG: ${{ github.sha }}
-          PULUMI_STACK: ${{ secrets.PULUMI_STACK_NAME || 'dev' }}
+          PULUMI_STACK: ${{ env.PULUMI_STACK }}
           AWS_REGION: ${{ env.AWS_REGION }}
         run: |
           chmod +x ${{ matrix.service.script }}
@@ -89,7 +90,6 @@ jobs:
         if: failure()
         run: |
           echo "Failed to build and push ${{ matrix.service.name }} image"
-          exit 1
 
       - name: Notify on success
         if: success()
