@@ -6,12 +6,12 @@ on:
       - main
       - master
     paths:
-      - 'docker/Dockerfile.haproxy'
-      - 'docker/Dockerfile.nginx'
-      - 'docker/haproxy.cfg'
-      - 'docker/nginx.conf'
-      - 'scripts/build-and-push-*.sh'
-      - '.github/workflows/build-push-images.yml'
+      - "docker/Dockerfile.haproxy"
+      - "docker/Dockerfile.nginx"
+      - "docker/haproxy.cfg"
+      - "docker/nginx.conf"
+      - "scripts/build-and-push-*.sh"
+      - ".github/workflows/build-push-images.yml"
   workflow_dispatch:
 
 permissions:
@@ -93,7 +93,7 @@ jobs:
         if: steps.dockerfile-check.outputs.changed == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install Pulumi
         if: steps.dockerfile-check.outputs.changed == 'true'
@@ -124,7 +124,9 @@ jobs:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
           chmod +x ${{ matrix.service.script }}
-          IMAGE_TAG=$IMAGE_TAG ${{ matrix.service.script }}
+          IMAGE_TAG=${IMAGE_TAG:0:8} ${{ matrix.service.script }}
+          # Also push with "latest" tag
+          IMAGE_TAG=latest ${{ matrix.service.script }}
 
       - name: Notify on failure
         if: failure()
@@ -135,3 +137,4 @@ jobs:
         if: success()
         run: |
           echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${{ github.sha }}"
+          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: latest"
