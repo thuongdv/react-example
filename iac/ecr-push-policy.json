@@ -12,7 +12,7 @@
         "ecr:CompleteLayerUpload",
         "ecr:DescribeRepositories"
       ],
-      "Resource": "arn:aws:ecr:REGION:ACCOUNT_ID:repository/react-app-*"
+      "Resource": "arn:aws:ecr:{{REGION}}:{{ACCOUNT_ID}}:repository/react-app-*"
     },
     {
       "Effect": "Allow",
