@@ -103,7 +103,7 @@ aws ecs describe-tasks --cluster react-app-cluster --tasks <task-arn> --region u
 3. **Container Insights**: Enabled at cluster level via [iac/src/cloud/aws/ecs.ts](iac/src/cloud/aws/ecs.ts#L42)
 4. **Health Checks**: All ECS services have health checks at `/health` endpoint
 5. **Logging**: CloudWatch log groups with 7-day retention at `/ecs/<service-name>`
-6. **DNS Resolution**: HAProxy uses AWS VPC DNS (`169.254.169.253`) - see [docker/haproxy.cfg](docker/haproxy.cfg#L13)
+6. **DNS Resolution**: HAProxy uses AWS VPC DNS resolver (`169.254.169.253` - AWS-provided DNS) - see [docker/haproxy.cfg](docker/haproxy.cfg#L13)
 
 ## Configuration Files
 
@@ -183,7 +183,7 @@ When adding tests:
 
 - Use **functional components** with hooks (no class components)
 - Prefer **arrow functions** for component definitions
-- Use **JSX** file extension for React components (`.jsx`)
+- Use **JSX** file extension (`.jsx`) for files containing JSX/React components
 - Keep components in `src/` directory
 - Use **PascalCase** for component names
 - Use **camelCase** for variables and functions
@@ -265,7 +265,7 @@ When adding tests:
 
 ```bash
 npm install                  # Install dependencies
-npm run dev                  # Start dev server (localhost:5173)
+npm run dev                  # Start dev server (http://localhost:5173 by default)
 npm run build                # Production build → dist/
 npm run preview              # Preview production build
 ```
@@ -326,6 +326,7 @@ aws ecs describe-tasks --cluster react-app-cluster --tasks <task-arn> --query 't
 
 **Problem**: Vite dev server not hot-reloading
 **Solution**: Check file watcher limits on Linux: `echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p`
+(For macOS/Windows, restart the dev server or IDE)
 
 ### IaC Deployment Issues
 
@@ -352,5 +353,5 @@ aws ecs describe-tasks --cluster react-app-cluster --tasks <task-arn> --query 't
 **Problem**: Service discovery not resolving
 **Solution**:
 - Verify namespace created: `aws servicediscovery list-namespaces`
-- Check HAProxy can query DNS: `nslookup nginx.react-app.local 169.254.169.253`
+- Check HAProxy can query AWS VPC DNS resolver: `nslookup nginx.react-app.local 169.254.169.253`
 - Ensure Service Discovery instances registered (can take 30-60s)
