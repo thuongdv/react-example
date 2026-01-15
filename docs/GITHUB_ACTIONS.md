@@ -50,12 +50,12 @@ Follow the AWS documentation: https://docs.aws.amazon.com/IAM/latest/UserGuide/i
 **Important:** Before running these commands, update the policy files with your actual values:
 
 1. In `iac/trust-policy.json`:
-   - Replace `ACCOUNT_ID` with your AWS account ID
-   - Replace `<github-owner>/<github-repo>` with your GitHub repository (e.g., `thuongdv/react-example`)
+   - Replace `{{ACCOUNT_ID}}` with your AWS account ID
+   - Replace `{{GITHUB_OWNER}}/{{GITHUB_REPO}}` with your GitHub repository (e.g., `thuongdv/react-example`)
 
 2. In `iac/ecr-push-policy.json`:
-   - Replace `REGION` with your AWS region (e.g., `us-east-1`)
-   - Replace `ACCOUNT_ID` with your AWS account ID
+   - Replace `{{REGION}}` with your AWS region (e.g., `us-east-1`)
+   - Replace `{{ACCOUNT_ID}}` with your AWS account ID
 
 ```bash
 # From the iac directory
@@ -82,7 +82,7 @@ aws iam put-role-policy \
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
+        "Federated": "arn:aws:iam::{{ACCOUNT_ID}}:oidc-provider/token.actions.githubusercontent.com"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
@@ -90,7 +90,7 @@ aws iam put-role-policy \
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:<github-owner>/<github-repo>:*"
+          "token.actions.githubusercontent.com:sub": "repo:{{GITHUB_OWNER}}/{{GITHUB_REPO}}:*"
         }
       }
     }
@@ -117,7 +117,7 @@ Note: This policy follows the principle of least privilege by restricting ECR op
         "ecr:CompleteLayerUpload",
         "ecr:DescribeRepositories"
       ],
-      "Resource": "arn:aws:ecr:REGION:ACCOUNT_ID:repository/react-app-*"
+      "Resource": "arn:aws:ecr:{{REGION}}:{{ACCOUNT_ID}}:repository/react-app-*"
     },
     {
       "Effect": "Allow",
@@ -137,17 +137,19 @@ Note: This policy follows the principle of least privilege by restricting ECR op
 
 Add the following secrets to your GitHub repository:
 
-| Secret              | Description                                     | Example                                               |
-| ------------------- | ----------------------------------------------- | ----------------------------------------------------- |
-| `AWS_ROLE_ARN`      | **Required** - IAM role ARN for OIDC            | `arn:aws:iam::123456789:role/github-actions-ecr-push` |
-| `PULUMI_STACK_NAME` | _Optional_ - Pulumi stack name (default: `dev`) | `dev` or `staging`                                    |
+| Secret         | Description                          | Example                                               |
+| -------------- | ------------------------------------ | ----------------------------------------------------- |
+| `AWS_ROLE_ARN` | **Required** - IAM role ARN for OIDC | `arn:aws:iam::123456789:role/github-actions-ecr-push` |
+| `PULUMI_STACK` | _Optional_ - Pulumi stack name       | `thuongdv/iac-react-example/dev` or `myorg/myproject/staging` |
+
+> **Note:** The `PULUMI_STACK` secret is optional. If not provided, the workflow defaults to `thuongdv/iac-react-example/dev`. To use a different Pulumi stack, add the `PULUMI_STACK` secret with your desired stack name.
 
 **To add secrets:**
 
 1. Go to Settings → Secrets and variables → Actions
 2. Click "New repository secret"
 3. Add `AWS_ROLE_ARN` with your IAM role ARN
-4. Optionally add `PULUMI_STACK_NAME` if using non-default stack
+4. Optionally add `PULUMI_STACK` if using a different stack than the default
 
 ## Workflow Details
 
@@ -302,6 +304,6 @@ IMAGE_TAG=$IMAGE_TAG DOCKER_HUB_PUSH=true ${{ matrix.service.script }}
 
 ## Related Documentation
 
-- [Build and Push Custom Images](../docs/BUILD_PUSH_CUSTOM_IMAGE.MD)
-- [Local Development](../docs/LOCAL_DEVELOPMENT.md)
-- [Architecture](../docs/ARCHITECTURE_UPDATE.md)
+- [Build and Push Custom Images](BUILD_PUSH_CUSTOM_IMAGE.MD)
+- [Local Development](LOCAL_DEVELOPMENT.md)
+- [Architecture](ARCHITECTURE_UPDATE.md)

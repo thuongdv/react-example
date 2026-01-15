@@ -20,7 +20,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  PULUMI_STACK: thuongdv/iac-react-example/dev
+  PULUMI_STACK: ${{ secrets.PULUMI_STACK || 'thuongdv/iac-react-example/dev' }}
 
 jobs:
   build-and-push:
@@ -65,8 +65,25 @@ jobs:
             exit 0
           fi
 
-          # Check for changes in Dockerfiles, configs, or build scripts
-          if git diff HEAD~1 HEAD --name-only | grep -qE '^(docker/Dockerfile\.${{ matrix.service.name }}|docker/haproxy\.cfg|docker/nginx\.conf|scripts/build-and-push-${{ matrix.service.name }}\.sh)$'; then
+          # Check for changes in Dockerfiles, service-specific config, or build scripts
+          service_name="${{ matrix.service.name }}"
+          config_path=""
+
+          if [ "$service_name" = "haproxy" ]; then
+            config_path="docker/haproxy.cfg"
+          elif [ "$service_name" = "nginx" ]; then
+            config_path="docker/nginx.conf"
+          fi
+
+          # Build a regex that includes the config for the current service (if applicable)
+          if [ -n "$config_path" ]; then
+            pattern="^(${config_path}|docker/Dockerfile\.${service_name}|scripts/build-and-push-${service_name}\.sh)$"
+          else
+            # For services without specific config files, check only Dockerfile and script
+            pattern="^(docker/Dockerfile\.${service_name}|scripts/build-and-push-${service_name}\.sh)$"
+          fi
+
+          if git diff HEAD~1 HEAD --name-only | grep -qE "$pattern"; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -106,9 +123,6 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
         run: |
           chmod +x ${{ matrix.service.script }}
-          cd iac
-          pulumi stack select $PULUMI_STACK
-          cd ..
           IMAGE_TAG=$IMAGE_TAG ${{ matrix.service.script }}
 
       - name: Notify on failure
