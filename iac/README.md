@@ -266,3 +266,7 @@ For issues or questions, refer to:
 - [AWS ECS Fargate Documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_types.html)
 - [HAProxy Documentation](http://www.haproxy.org/)
 - [Nginx Documentation](https://nginx.org/en/docs/)
+
+## AI Coding Agent Instructions
+
+For comprehensive guidance on working with this codebase (including architecture, workflows, conventions, and troubleshooting), see the [GitHub Copilot instructions](../.github/copilot-instructions.md).
