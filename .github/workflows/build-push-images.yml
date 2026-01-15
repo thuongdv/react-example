@@ -121,6 +121,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           PULUMI_STACK: ${{ env.PULUMI_STACK }}
           AWS_REGION: ${{ env.AWS_REGION }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
           chmod +x ${{ matrix.service.script }}
           IMAGE_TAG=$IMAGE_TAG ${{ matrix.service.script }}
