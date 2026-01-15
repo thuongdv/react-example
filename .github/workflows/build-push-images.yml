@@ -75,8 +75,13 @@ jobs:
             config_path="docker/nginx.conf"
           fi
 
-          # Build a regex that only includes the config for the current service
-          pattern="^(${config_path}|docker/Dockerfile\.${service_name}|scripts/build-and-push-${service_name}\.sh)$"
+          # Build a regex that includes the config for the current service (if applicable)
+          if [ -n "$config_path" ]; then
+            pattern="^(${config_path}|docker/Dockerfile\.${service_name}|scripts/build-and-push-${service_name}\.sh)$"
+          else
+            # For services without specific config files, check only Dockerfile and script
+            pattern="^(docker/Dockerfile\.${service_name}|scripts/build-and-push-${service_name}\.sh)$"
+          fi
 
           if git diff HEAD~1 HEAD --name-only | grep -qE "$pattern"; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
