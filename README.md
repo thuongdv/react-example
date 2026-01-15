@@ -28,3 +28,7 @@ A simple React single page application built with Vite.
 - ⚛️ React 18
 - 🎨 Modern CSS with dark/light mode support
 - 🔥 Hot Module Replacement (HMR)
+
+## For AI Coding Agents
+
+This repository includes comprehensive instructions for AI coding agents (like GitHub Copilot) to understand the architecture, development workflows, and best practices. See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detailed guidance.
