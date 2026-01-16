@@ -1,0 +1,36 @@
+{
+  "editor.formatOnSave": true,
+  "files.insertFinalNewline": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "cSpell.ignoreWords": [
+    "unmark",
+    "dotenv",
+    "maxsize",
+    "issuelinks",
+    "chartjs",
+    "flexbox",
+    "vite",
+    "noopener",
+    "noreferrer",
+    "pulumi",
+    "autotag",
+    "packagemanager",
+    "newkey",
+    "haproxy",
+    "reqx",
+    "rsapem",
+    "haproxypem",
+    "certs",
+    "cnlocalhost",
+    "ssrreactexample",
+    "keyout"
+  ],
+  "cSpell.ignorePaths": [
+    "**/node_modules/**",
+    "**/.vscode/**",
+    "package.json",
+    "tsconfig.json"
+  ]
+}

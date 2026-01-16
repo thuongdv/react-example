@@ -115,6 +115,16 @@ jobs:
           cd iac
           npm install
 
+      - name: Generate self-signed certificates
+        if: steps.dockerfile-check.outputs.changed == 'true' && matrix.service.name == 'haproxy'
+        run: |
+          mkdir -p docker/certs
+          openssl req -x509 -newkey rsa:2048 \
+            -keyout docker/certs/haproxy-key.pem \
+            -out docker/certs/haproxy-cert.pem \
+            -days 365 -nodes -subj "/CN=localhost"
+          cat docker/certs/haproxy-cert.pem docker/certs/haproxy-key.pem > docker/certs/haproxy.pem
+
       - name: Build and push ${{ matrix.service.name }} image
         if: steps.dockerfile-check.outputs.changed == 'true'
         env:
