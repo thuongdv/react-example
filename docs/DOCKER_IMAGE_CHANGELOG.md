@@ -39,29 +39,16 @@ Docker images for HAProxy and Nginx services are automatically built and pushed 
 
 ---
 
-### Version: a85f2ac
-
-**Date**: (Previous version - details to be documented retroactively)
-
-**Commit**: [a85f2ac](https://github.com/thuongdv/react-example/commit/a85f2ac)
-
-**Changes**: Previous baseline configuration (details to be added when reviewing commit history)
-
-**Image URIs**:
-- HAProxy: `077024820570.dkr.ecr.us-east-1.amazonaws.com/react-app-haproxy:a85f2ac`
-- Nginx: `077024820570.dkr.ecr.us-east-1.amazonaws.com/react-app-nginx:a85f2ac`
-
----
-
 ## How to Find Changes Between Versions
 
 To see what changed between two image versions, compare the commits:
 
 ```bash
-# View changes between two versions
-git diff a85f2ac..7d43056 -- docker/ scripts/
+# View changes between two versions (replace with actual commit SHAs)
+git diff <old-version>...<new-version> -- docker/ scripts/
 
 # View specific commit details
+git show 7d43056 -- docker/ scripts/
 git show 7d43056 -- docker/ scripts/
 ```
 
