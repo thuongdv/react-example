@@ -13,17 +13,17 @@ This project supports HTTPS 443 as the primary entry point with automatic HTTP 8
 
 ### Self-Signed Certificates
 
-Self-signed certificates are pre-generated and located in `docker/certs/`:
+Self-signed certificates are **not** committed to version control. You must generate them locally, and they should be placed in `docker/certs/`:
 
 - `haproxy.pem` - Combined certificate and key (used by HAProxy)
 - `haproxy-cert.pem` - Certificate only
 - `haproxy-key.pem` - Private key only
 
-The certificates are valid for **365 days** and use **localhost** as the CN.
+When generated with the commands below, the certificates are valid for **365 days** and use **localhost** as the CN.
 
-#### Regenerate Certificates
+#### Generate or Regenerate Certificates
 
-If certificates expire or need to be regenerated:
+If certificates do not exist yet, have expired, or need to be regenerated:
 
 ```bash
 cd docker/certs
@@ -62,34 +62,70 @@ ports:
 
 ### Certificate Management
 
-For production AWS deployments, certificates must be:
+For production AWS deployments, you have two main options:
 
-1. **Obtained from AWS Certificate Manager (ACM)** or another trusted CA
-2. **Stored in docker/certs/** as `haproxy.pem`
-3. **Referenced in Dockerfiles** as shown below
+#### Option 1: Using AWS Certificate Manager (ACM) - Recommended
 
-#### Steps to Deploy with Production Certificates
+**Important**: ACM certificates cannot be exported and therefore cannot be directly used with HAProxy running in containers. You have two approaches:
 
-1. **Request Certificate in AWS ACM**:
+**Approach A - Use AWS Application Load Balancer (ALB)**:
+- Place an ALB in front of HAProxy
+- Attach the ACM certificate to the ALB for TLS termination
+- ALB handles all TLS/SSL connections
+- HAProxy receives decrypted HTTP traffic from ALB
+- This is the recommended approach for using ACM certificates
+
+**Approach B - Use External Certificates with HAProxy**:
+- Use Let's Encrypt or another CA to obtain exportable certificates
+- Follow Option 2 below for certificate management
+
+#### Option 2: Using External CA (Let's Encrypt, DigiCert, etc.)
+
+1. **Obtain Certificate from CA**:
    ```bash
-   aws acm request-certificate \
-     --domain-name example.com \
-     --subject-alternative-names "*.example.com" \
-     --region us-east-1
+   # Example with Let's Encrypt (certbot)
+   certbot certonly --standalone -d example.com -d www.example.com
    ```
 
-2. **Download Certificate and Key**:
-   - Export from ACM or use your existing certificate files
-   - Combine certificate and private key into single PEM file:
-     ```bash
-     cat certificate.pem private-key.pem > docker/certs/haproxy.pem
-     ```
+2. **Combine Certificate and Private Key**:
+   ```bash
+   # Let's Encrypt example
+   cat /etc/letsencrypt/live/example.com/fullchain.pem \
+       /etc/letsencrypt/live/example.com/privkey.pem \
+       > docker/certs/haproxy.pem
+   
+   # Or with separate files
+   cat certificate.pem private-key.pem intermediate-certs.pem > docker/certs/haproxy.pem
+   ```
 
-3. **Deploy to AWS**:
+3. **Build and Push Docker Image**:
+   ```bash
+   # Build HAProxy image with production certificates
+   ./scripts/build-and-push-haproxy.sh production
+   ```
+
+4. **Update Pulumi Configuration**:
    ```bash
    cd iac
+   pulumi config set haproxy-image-uri <your-ecr-repo>:production
+   ```
+
+5. **Deploy to AWS**:
+   ```bash
    pulumi up
    ```
+
+#### Certificate Rotation
+
+Certificates should be rotated before expiration:
+
+1. Generate or obtain new certificates
+2. Place new `haproxy.pem` in `docker/certs/`
+3. Build and push new Docker image with updated tag
+4. Update Pulumi config with new image tag
+5. Run `pulumi up` to deploy
+
+**Automation Recommendation**: Set up a CI/CD pipeline to automate certificate renewal and deployment.
 
 ### Security Group Configuration
 
