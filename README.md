@@ -33,6 +33,7 @@ A simple React single page application built with Vite.
 
 - **[Architecture Overview](docs/ARCHITECTURE_UPDATE.md)** - System architecture and component interactions
 - **[Docker Image Changelog](docs/DOCKER_IMAGE_CHANGELOG.md)** - Version history and changes for Docker images
+- **[Build and Push Custom Images](docs/BUILD_PUSH_CUSTOM_IMAGE.MD)** - Manual build and push instructions
 - **[HTTPS Setup](docs/HTTPS_SETUP.md)** - HTTPS/TLS configuration guide
 - **[Local Development](docs/LOCAL_DEVELOPMENT.md)** - Local development setup and workflows
 - **[GitHub Actions](docs/GITHUB_ACTIONS.md)** - CI/CD pipeline documentation
