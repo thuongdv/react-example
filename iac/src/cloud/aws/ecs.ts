@@ -160,6 +160,30 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
     logGroupName = logGroup.name;
   }
 
+  // Build port mappings
+  const portMappings = [
+    {
+      containerPort: config.containerPort,
+      hostPort: config.containerPort,
+      protocol: "tcp",
+    },
+  ];
+  
+  if (config.additionalPorts) {
+    config.additionalPorts.forEach((port) => {
+      portMappings.push({
+        containerPort: port,
+        hostPort: port,
+        protocol: "tcp",
+      });
+    });
+  }
+
+  // Determine health check port (prefer port 80 if available for non-SSL health checks)
+  const healthCheckPort = config.additionalPorts?.includes(80) 
+    ? 80 
+    : config.containerPort;
+
   // Create task definition
   const taskDefinition = new aws.ecs.TaskDefinition(
     `${config.serviceName}-task`,
@@ -171,54 +195,39 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
       memory: config.containerMemory.toString(),
       executionRoleArn: taskExecutionRole.arn,
       taskRoleArn: taskRole.arn,
-      containerDefinitions: pulumi.interpolate`[
-        {
-          "name": "${config.serviceName}",
-          "image": "${config.imageUri}",
-          "portMappings": [
-            {
-              "containerPort": ${config.containerPort},
-              "hostPort": ${config.containerPort},
-              "protocol": "tcp"
-            }${
-              config.additionalPorts
-                ? config.additionalPorts
-                    .map(
-                      (port) => `,
-            {
-              "containerPort": ${port},
-              "hostPort": ${port},
-              "protocol": "tcp"
-            }`
-                    )
-                    .join("")
-                : ""
-            }
-          ],
-          "essential": true,
-          "logConfiguration": ${
-            logGroupName
-              ? pulumi.interpolate`{
-                "logDriver": "awslogs",
-                "options": {
-                  "awslogs-group": "${logGroupName}",
-                  "awslogs-region": "${aws.config.region}",
-                  "awslogs-stream-prefix": "ecs"
-                }
-              }`
-              : '"logDriver": "awsfirelens"'
-          },
-          "healthCheck": {
-            "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:${
-              config.containerPort
-            }/health || exit 1"],
-            "interval": 30,
-            "timeout": 10,
-            "retries": 5,
-            "startPeriod": 120
+      containerDefinitions: pulumi
+        .all([config.imageUri, logGroupName])
+        .apply(([imageUri, logGroup]) => {
+          const containerDef = {
+            name: config.serviceName,
+            image: imageUri,
+            portMappings: portMappings,
+            essential: true,
+            healthCheck: {
+              command: [
+                "CMD-SHELL",
+                `wget -qO- http://127.0.0.1:${healthCheckPort}/health || exit 1`,
+              ],
+              interval: 30,
+              timeout: 10,
+              retries: 5,
+              startPeriod: 120,
+            },
+          } as any;
+
+          if (logGroup) {
+            containerDef.logConfiguration = {
+              logDriver: "awslogs",
+              options: {
+                "awslogs-group": logGroup,
+                "awslogs-region": aws.config.region!,
+                "awslogs-stream-prefix": "ecs",
+              },
+            };
           }
-        }
-      ]`,
+
+          return JSON.stringify([containerDef]);
+        }),
       tags: {
         Name: `${config.serviceName}-task-def`,
       },
