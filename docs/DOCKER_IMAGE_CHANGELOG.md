@@ -49,7 +49,6 @@ git diff <old-version>...<new-version> -- docker/ scripts/
 
 # View specific commit details
 git show 7d43056 -- docker/ scripts/
-git show 7d43056 -- docker/ scripts/
 ```
 
 ## Rollback Instructions
