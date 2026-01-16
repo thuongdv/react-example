@@ -1,6 +1,9 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+// Health check port preference: use port 80 when available for non-SSL health checks
+const PREFERRED_HEALTH_CHECK_PORT = 80;
+
 interface EcsClusterConfig {
   name?: string;
   tags?: { [key: string]: string };
@@ -22,6 +25,36 @@ interface EcsServiceConfig {
   enableLogging?: boolean;
   cloudwatchLogGroup?: aws.cloudwatch.LogGroup;
   serviceRegistryArn?: pulumi.Input<string>;
+}
+
+interface PortMapping {
+  containerPort: number;
+  hostPort: number;
+  protocol: "tcp" | "udp";
+}
+
+interface HealthCheck {
+  command: string[];
+  interval: number;
+  timeout: number;
+  retries: number;
+  startPeriod: number;
+}
+
+interface LogConfiguration {
+  logDriver: string;
+  options: {
+    [key: string]: string;
+  };
+}
+
+interface ContainerDefinition {
+  name: string;
+  image: string;
+  portMappings: PortMapping[];
+  essential: boolean;
+  healthCheck: HealthCheck;
+  logConfiguration?: LogConfiguration;
 }
 
 export interface EcsResources {
@@ -161,7 +194,7 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
   }
 
   // Build port mappings
-  const portMappings = [
+  const portMappings: PortMapping[] = [
     {
       containerPort: config.containerPort,
       hostPort: config.containerPort,
@@ -170,18 +203,18 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
   ];
   
   if (config.additionalPorts) {
-    config.additionalPorts.forEach((port) => {
-      portMappings.push({
+    portMappings.push(
+      ...config.additionalPorts.map((port) => ({
         containerPort: port,
         hostPort: port,
-        protocol: "tcp",
-      });
-    });
+        protocol: "tcp" as const,
+      }))
+    );
   }
 
   // Determine health check port (prefer port 80 if available for non-SSL health checks)
-  const healthCheckPort = config.additionalPorts?.includes(80) 
-    ? 80 
+  const healthCheckPort = config.additionalPorts?.includes(PREFERRED_HEALTH_CHECK_PORT) 
+    ? PREFERRED_HEALTH_CHECK_PORT 
     : config.containerPort;
 
   // Create task definition
@@ -198,7 +231,7 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
       containerDefinitions: pulumi
         .all([config.imageUri, logGroupName])
         .apply(([imageUri, logGroup]) => {
-          const containerDef = {
+          const containerDef: ContainerDefinition = {
             name: config.serviceName,
             image: imageUri,
             portMappings: portMappings,
@@ -213,7 +246,7 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
               retries: 5,
               startPeriod: 120,
             },
-          } as any;
+          };
 
           if (logGroup) {
             containerDef.logConfiguration = {
