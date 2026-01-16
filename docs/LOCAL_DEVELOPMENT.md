@@ -6,7 +6,22 @@ This project uses Docker Compose for local development with HAProxy as a load ba
 
 - Docker and Docker Compose installed
 - Node.js and npm installed
-- Self-signed SSL certificates (pre-generated in `docker/certs/`)
+- SSL certificates must be generated (see below)
+
+### Generate SSL Certificates (First-Time Setup)
+
+Before running the application for the first time, you need to generate self-signed SSL certificates:
+
+```bash
+mkdir -p docker/certs
+cd docker/certs
+openssl req -x509 -newkey rsa:2048 -keyout haproxy-key.pem -out haproxy-cert.pem \
+  -days 365 -nodes -subj "/CN=localhost"
+cat haproxy-cert.pem haproxy-key.pem > haproxy.pem
+cd ../..
+```
+
+This creates the necessary certificates for local HTTPS development. These certificates are valid for 365 days.
 
 ## Quick Start
 
@@ -54,6 +69,14 @@ Since the local setup uses self-signed certificates, browsers will show a securi
 - **Chrome/Edge**: Click "Advanced" → "Proceed to localhost (unsafe)"
 - **Firefox**: Click "Advanced" → "Accept the Risk and Continue"
 - **curl**: Use `-k` flag: `curl -k https://localhost/`
+
+**Note about HSTS and redirects**
+
+After visiting `http://localhost/` once and getting redirected to HTTPS, browsers with HTTP Strict Transport Security (HSTS) enabled will remember this and automatically upgrade future HTTP requests to HTTPS without even sending the initial HTTP request.
+
+If you need to test the HTTP-to-HTTPS redirect behavior explicitly:
+- Clear HSTS data for `localhost` in your browser settings, or use a fresh/incognito browser profile, **and/or**
+- Use a tool like `curl` to observe the redirect: `curl -vL http://localhost/`
 
 ## Architecture
 

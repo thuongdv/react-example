@@ -12,6 +12,7 @@ interface EcsServiceConfig {
   serviceName: string;
   imageUri: pulumi.Input<string>;
   containerPort: number;
+  additionalPorts?: number[]; // Support for multiple ports (e.g., 80 and 443 for HAProxy)
   containerMemory: number;
   containerCpu: number;
   desiredCount?: number;
@@ -179,6 +180,19 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
               "containerPort": ${config.containerPort},
               "hostPort": ${config.containerPort},
               "protocol": "tcp"
+            }${
+              config.additionalPorts
+                ? config.additionalPorts
+                    .map(
+                      (port) => `,
+            {
+              "containerPort": ${port},
+              "hostPort": ${port},
+              "protocol": "tcp"
+            }`
+                    )
+                    .join("")
+                : ""
             }
           ],
           "essential": true,

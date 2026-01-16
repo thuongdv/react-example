@@ -3,8 +3,12 @@ FROM haproxy:3.3.1-alpine
 # Copy HAProxy configuration
 COPY docker/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 
-# Copy certificates (self-signed for local, real certs for production)
-COPY docker/certs /usr/local/etc/haproxy/certs/
+# Copy certificates - ensure docker/certs directory exists before building
+# Run: mkdir -p docker/certs && cd docker/certs && \
+#      openssl req -x509 -newkey rsa:2048 -keyout haproxy-key.pem -out haproxy-cert.pem \
+#      -days 365 -nodes -subj "/CN=localhost" && \
+#      cat haproxy-cert.pem haproxy-key.pem > haproxy.pem
+COPY docker/certs/haproxy.pem /usr/local/etc/haproxy/certs/haproxy.pem
 
 # Expose ports (80 for HTTP redirect, 443 for HTTPS)
 EXPOSE 80 443

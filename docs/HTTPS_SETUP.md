@@ -13,17 +13,17 @@ This project supports HTTPS 443 as the primary entry point with automatic HTTP 8
 
 ### Self-Signed Certificates
 
-Self-signed certificates are pre-generated and located in `docker/certs/`:
+Self-signed certificates are **not** committed to version control. You must generate them locally, and they should be placed in `docker/certs/`:
 
 - `haproxy.pem` - Combined certificate and key (used by HAProxy)
 - `haproxy-cert.pem` - Certificate only
 - `haproxy-key.pem` - Private key only
 
-The certificates are valid for **365 days** and use **localhost** as the CN.
+When generated with the commands below, the certificates are valid for **365 days** and use **localhost** as the CN.
 
-#### Regenerate Certificates
+#### Generate or Regenerate Certificates
 
-If certificates expire or need to be regenerated:
+If certificates do not exist yet, have expired, or need to be regenerated:
 
 ```bash
 cd docker/certs
