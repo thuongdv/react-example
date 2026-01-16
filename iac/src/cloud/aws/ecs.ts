@@ -1,6 +1,9 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+// Health check port preference: use port 80 when available for non-SSL health checks
+const PREFERRED_HEALTH_CHECK_PORT = 80;
+
 interface EcsClusterConfig {
   name?: string;
   tags?: { [key: string]: string };
@@ -12,6 +15,7 @@ interface EcsServiceConfig {
   serviceName: string;
   imageUri: pulumi.Input<string>;
   containerPort: number;
+  additionalPorts?: number[]; // Support for multiple ports (e.g., 80 and 443 for HAProxy)
   containerMemory: number;
   containerCpu: number;
   desiredCount?: number;
@@ -21,6 +25,36 @@ interface EcsServiceConfig {
   enableLogging?: boolean;
   cloudwatchLogGroup?: aws.cloudwatch.LogGroup;
   serviceRegistryArn?: pulumi.Input<string>;
+}
+
+interface PortMapping {
+  containerPort: number;
+  hostPort: number;
+  protocol: "tcp" | "udp";
+}
+
+interface HealthCheck {
+  command: string[];
+  interval: number;
+  timeout: number;
+  retries: number;
+  startPeriod: number;
+}
+
+interface LogConfiguration {
+  logDriver: string;
+  options: {
+    [key: string]: string;
+  };
+}
+
+interface ContainerDefinition {
+  name: string;
+  image: string;
+  portMappings: PortMapping[];
+  essential: boolean;
+  healthCheck: HealthCheck;
+  logConfiguration?: LogConfiguration;
 }
 
 export interface EcsResources {
@@ -159,6 +193,31 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
     logGroupName = logGroup.name;
   }
 
+  // Build port mappings
+  const portMappings: PortMapping[] = [
+    {
+      containerPort: config.containerPort,
+      hostPort: config.containerPort,
+      protocol: "tcp",
+    },
+  ];
+  
+  if (config.additionalPorts) {
+    portMappings.push(
+      ...config.additionalPorts.map((port) => ({
+        containerPort: port,
+        hostPort: port,
+        protocol: "tcp" as const,
+      }))
+    );
+  }
+
+  // Determine health check port (prefer port 80 if available for non-SSL health checks)
+  const allPorts = [config.containerPort, ...(config.additionalPorts || [])];
+  const healthCheckPort = allPorts.includes(PREFERRED_HEALTH_CHECK_PORT)
+    ? PREFERRED_HEALTH_CHECK_PORT 
+    : config.containerPort;
+
   // Create task definition
   const taskDefinition = new aws.ecs.TaskDefinition(
     `${config.serviceName}-task`,
@@ -170,41 +229,39 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
       memory: config.containerMemory.toString(),
       executionRoleArn: taskExecutionRole.arn,
       taskRoleArn: taskRole.arn,
-      containerDefinitions: pulumi.interpolate`[
-        {
-          "name": "${config.serviceName}",
-          "image": "${config.imageUri}",
-          "portMappings": [
-            {
-              "containerPort": ${config.containerPort},
-              "hostPort": ${config.containerPort},
-              "protocol": "tcp"
-            }
-          ],
-          "essential": true,
-          "logConfiguration": ${
-            logGroupName
-              ? pulumi.interpolate`{
-                "logDriver": "awslogs",
-                "options": {
-                  "awslogs-group": "${logGroupName}",
-                  "awslogs-region": "${aws.config.region}",
-                  "awslogs-stream-prefix": "ecs"
-                }
-              }`
-              : '"logDriver": "awsfirelens"'
-          },
-          "healthCheck": {
-            "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:${
-              config.containerPort
-            }/health || exit 1"],
-            "interval": 30,
-            "timeout": 10,
-            "retries": 5,
-            "startPeriod": 120
+      containerDefinitions: pulumi
+        .all([config.imageUri, logGroupName])
+        .apply(([imageUri, logGroup]) => {
+          const containerDef: ContainerDefinition = {
+            name: config.serviceName,
+            image: imageUri,
+            portMappings: portMappings,
+            essential: true,
+            healthCheck: {
+              command: [
+                "CMD-SHELL",
+                `wget -qO- http://127.0.0.1:${healthCheckPort}/health || exit 1`,
+              ],
+              interval: 30,
+              timeout: 10,
+              retries: 5,
+              startPeriod: 120,
+            },
+          };
+
+          if (logGroup) {
+            containerDef.logConfiguration = {
+              logDriver: "awslogs",
+              options: {
+                "awslogs-group": logGroup,
+                "awslogs-region": aws.config.region || "us-east-1",
+                "awslogs-stream-prefix": "ecs",
+              },
+            };
           }
-        }
-      ]`,
+
+          return JSON.stringify([containerDef]);
+        }),
       tags: {
         Name: `${config.serviceName}-task-def`,
       },

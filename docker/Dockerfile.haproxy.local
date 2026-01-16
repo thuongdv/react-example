@@ -3,8 +3,15 @@ FROM haproxy:3.3.1-alpine
 # Copy local HAProxy configuration (without AWS resolver)
 COPY docker/haproxy.local.cfg /usr/local/etc/haproxy/haproxy.cfg
 
-# Expose port
-EXPOSE 8080
+# Copy self-signed certificates - ensure they exist before building
+# Run: mkdir -p docker/certs && cd docker/certs && \
+#      openssl req -x509 -newkey rsa:2048 -keyout haproxy-key.pem -out haproxy-cert.pem \
+#      -days 365 -nodes -subj "/CN=localhost" && \
+#      cat haproxy-cert.pem haproxy-key.pem > haproxy.pem
+COPY docker/certs/haproxy.pem /usr/local/etc/haproxy/certs/haproxy.pem
+
+# Expose ports (80 for HTTP redirect, 443 for HTTPS)
+EXPOSE 80 443
 
 # Run HAProxy
 CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
