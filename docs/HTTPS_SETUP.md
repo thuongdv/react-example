@@ -62,34 +62,69 @@ ports:
 
 ### Certificate Management
 
-For production AWS deployments, certificates must be:
+For production AWS deployments, you have two main options:
 
-1. **Obtained from AWS Certificate Manager (ACM)** or another trusted CA
-2. **Stored in docker/certs/** as `haproxy.pem`
-3. **Referenced in Dockerfiles** as shown below
+#### Option 1: Using AWS Certificate Manager (ACM) - Recommended
 
-#### Steps to Deploy with Production Certificates
+**Important**: ACM certificates cannot be directly exported for use with HAProxy on ECS Fargate. You have two approaches:
 
-1. **Request Certificate in AWS ACM**:
+**Approach A - Use AWS Application Load Balancer (ALB)**:
+- Place an ALB in front of HAProxy
+- Attach the ACM certificate to the ALB
+- ALB handles TLS termination
+- HAProxy receives traffic over HTTP from ALB
+
+**Approach B - Use External Certificates with HAProxy**:
+- Use Let's Encrypt or another CA to obtain certificates
+- Follow Option 2 below
+
+#### Option 2: Using External CA (Let's Encrypt, DigiCert, etc.)
+
+1. **Obtain Certificate from CA**:
    ```bash
-   aws acm request-certificate \
-     --domain-name example.com \
-     --subject-alternative-names "*.example.com" \
-     --region us-east-1
+   # Example with Let's Encrypt (certbot)
+   certbot certonly --standalone -d example.com -d www.example.com
    ```
 
-2. **Download Certificate and Key**:
-   - Export from ACM or use your existing certificate files
-   - Combine certificate and private key into single PEM file:
-     ```bash
-     cat certificate.pem private-key.pem > docker/certs/haproxy.pem
-     ```
+2. **Combine Certificate and Private Key**:
+   ```bash
+   # Let's Encrypt example
+   cat /etc/letsencrypt/live/example.com/fullchain.pem \
+       /etc/letsencrypt/live/example.com/privkey.pem \
+       > docker/certs/haproxy.pem
+   
+   # Or with separate files
+   cat certificate.pem private-key.pem intermediate-certs.pem > docker/certs/haproxy.pem
+   ```
 
-3. **Deploy to AWS**:
+3. **Build and Push Docker Image**:
+   ```bash
+   # Build HAProxy image with production certificates
+   ./scripts/build-and-push-haproxy.sh production
+   ```
+
+4. **Update Pulumi Configuration**:
    ```bash
    cd iac
+   pulumi config set haproxy-image-uri <your-ecr-repo>:production
+   ```
+
+5. **Deploy to AWS**:
+   ```bash
    pulumi up
    ```
+
+#### Certificate Rotation
+
+Certificates should be rotated before expiration:
+
+1. Generate or obtain new certificates
+2. Place new `haproxy.pem` in `docker/certs/`
+3. Build and push new Docker image with updated tag
+4. Update Pulumi config with new image tag
+5. Run `pulumi up` to deploy
+
+**Automation Recommendation**: Set up a CI/CD pipeline to automate certificate renewal and deployment.
 
 ### Security Group Configuration
 
