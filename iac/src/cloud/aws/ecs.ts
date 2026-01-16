@@ -213,7 +213,8 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
   }
 
   // Determine health check port (prefer port 80 if available for non-SSL health checks)
-  const healthCheckPort = config.additionalPorts?.includes(PREFERRED_HEALTH_CHECK_PORT) 
+  const allPorts = [config.containerPort, ...(config.additionalPorts || [])];
+  const healthCheckPort = allPorts.includes(PREFERRED_HEALTH_CHECK_PORT)
     ? PREFERRED_HEALTH_CHECK_PORT 
     : config.containerPort;
 
@@ -253,7 +254,7 @@ export function createEcsService(config: EcsServiceConfig): aws.ecs.Service {
               logDriver: "awslogs",
               options: {
                 "awslogs-group": logGroup,
-                "awslogs-region": aws.config.region!,
+                "awslogs-region": aws.config.region || "us-east-1",
                 "awslogs-stream-prefix": "ecs",
               },
             };

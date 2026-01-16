@@ -66,17 +66,18 @@ For production AWS deployments, you have two main options:
 
 #### Option 1: Using AWS Certificate Manager (ACM) - Recommended
 
-**Important**: ACM certificates cannot be directly exported for use with HAProxy on ECS Fargate. You have two approaches:
+**Important**: ACM certificates cannot be exported and therefore cannot be directly used with HAProxy running in containers. You have two approaches:
 
 **Approach A - Use AWS Application Load Balancer (ALB)**:
 - Place an ALB in front of HAProxy
-- Attach the ACM certificate to the ALB
-- ALB handles TLS termination
-- HAProxy receives traffic over HTTP from ALB
+- Attach the ACM certificate to the ALB for TLS termination
+- ALB handles all TLS/SSL connections
+- HAProxy receives decrypted HTTP traffic from ALB
+- This is the recommended approach for using ACM certificates
 
 **Approach B - Use External Certificates with HAProxy**:
-- Use Let's Encrypt or another CA to obtain certificates
-- Follow Option 2 below
+- Use Let's Encrypt or another CA to obtain exportable certificates
+- Follow Option 2 below for certificate management
 
 #### Option 2: Using External CA (Let's Encrypt, DigiCert, etc.)
 
