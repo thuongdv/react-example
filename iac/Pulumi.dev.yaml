@@ -2,5 +2,5 @@ config:
   aws:region: us-east-1
   iac-react-example:serviceName: react-service
   iac-react-example:environmentName: dev
-  iac-react-example:haproxy-image-uri: 077024820570.dkr.ecr.us-east-1.amazonaws.com/react-app-haproxy:a85f2ac
-  iac-react-example:nginx-image-uri: 077024820570.dkr.ecr.us-east-1.amazonaws.com/react-app-nginx:a85f2ac
+  iac-react-example:haproxy-image-uri: 077024820570.dkr.ecr.us-east-1.amazonaws.com/react-app-haproxy:7d43056
+  iac-react-example:nginx-image-uri: 077024820570.dkr.ecr.us-east-1.amazonaws.com/react-app-nginx:7d43056
