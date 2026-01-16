@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 
+# Certificates (local dev only)
+docker/certs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

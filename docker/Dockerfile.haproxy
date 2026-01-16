@@ -3,8 +3,11 @@ FROM haproxy:3.3.1-alpine
 # Copy HAProxy configuration
 COPY docker/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 
-# Expose port
-EXPOSE 8080
+# Copy certificates (self-signed for local, real certs for production)
+COPY docker/certs /usr/local/etc/haproxy/certs/
+
+# Expose ports (80 for HTTP redirect, 443 for HTTPS)
+EXPOSE 80 443
 
 # Run HAProxy
 CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg", "-db"]

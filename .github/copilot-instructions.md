@@ -8,9 +8,10 @@ React SPA with Vite deployed to AWS ECS Fargate using Pulumi IaC. Traffic flows:
 
 ### Traffic Flow (Critical)
 
-- **HAProxy**: ECS Fargate in public subnets with public IPs, port 8080 exposed to internet
+- **HAProxy**: ECS Fargate in public subnets with public IPs, ports **80 (HTTP redirect) and 443 (HTTPS)** exposed to internet
 - **Nginx**: ECS Fargate in private subnets, no public IPs, accessible only from HAProxy via security groups
-- **No ALB**: HAProxy acts as entry point and load balancer
+- **HTTPS Only**: HAProxy terminates TLS on 443, automatically redirects HTTP 80 → HTTPS 301
+- **No ALB**: HAProxy acts as entry point, load balancer, and TLS terminator
 - Service discovery: Nginx accessible at `nginx.react-app.local` via AWS Cloud Map
 
 ### Network Topology
@@ -50,10 +51,12 @@ All AWS resources automatically tagged via [iac/src/autotag.ts](iac/src/autotag.
 
 ```bash
 npm run dev                 # React dev server (port 5173)
-npm run local:start         # Build React + start Docker Compose (HAProxy on :8080)
+npm run local:start         # Build React + start Docker Compose (HAProxy on :443 HTTPS, :80 HTTP redirect)
 npm run local:logs          # View container logs
 npm run local:stop          # Stop containers
 ```
+
+**Note**: Local deployment uses self-signed certificates. Browsers will show a warning - this is normal and safe for local development.
 
 ### AWS Deployment
 
@@ -98,12 +101,14 @@ aws ecs describe-tasks --cluster react-app-cluster --tasks <task-arn> --region u
 
 ## Key Conventions
 
-1. **Security Groups**: Public SG allows internet ingress on 80/443/8080; Private SG only accepts from Public SG
-2. **ECS Fargate**: HAProxy uses `assignPublicIp: true`, Nginx uses `assignPublicIp: false`
-3. **Container Insights**: Enabled at cluster level via [iac/src/cloud/aws/ecs.ts](iac/src/cloud/aws/ecs.ts#L42)
-4. **Health Checks**: All ECS services have health checks at `/health` endpoint
-5. **Logging**: CloudWatch log groups with 7-day retention at `/ecs/<service-name>`
-6. **DNS Resolution**: HAProxy uses AWS VPC DNS resolver (`169.254.169.253` - AWS-provided DNS) - see [docker/haproxy.cfg](docker/haproxy.cfg#L13)
+1. **Security Groups**: Public SG allows internet ingress on **80 (HTTP) and 443 (HTTPS)** only; Private SG only accepts from Public SG
+2. **HTTP/HTTPS**: HAProxy listens on 80 (redirects to 443) and 443 (HTTPS with TLS termination)
+3. **ECS Fargate**: HAProxy uses `assignPublicIp: true`, Nginx uses `assignPublicIp: false`
+4. **Container Insights**: Enabled at cluster level via [iac/src/cloud/aws/ecs.ts](iac/src/cloud/aws/ecs.ts#L42)
+5. **Health Checks**: All ECS services have health checks at `/health` endpoint
+6. **Logging**: CloudWatch log groups with 7-day retention at `/ecs/<service-name>`
+7. **DNS Resolution**: HAProxy uses AWS VPC DNS resolver (`169.254.169.253` - AWS-provided DNS) - see [docker/haproxy.cfg](docker/haproxy.cfg#L13)
+8. **SSL/TLS**: HAProxy terminates all TLS connections, auto-redirects HTTP to HTTPS with 301 status code
 
 ## Configuration Files
 
@@ -111,12 +116,14 @@ aws ecs describe-tasks --cluster react-app-cluster --tasks <task-arn> --region u
 - [Pulumi.dev.yaml](iac/Pulumi.dev.yaml) - Environment-specific config
 - [docker-compose.yml](docker-compose.yml) - Local development setup
 - [vite.config.js](vite.config.js) - Frontend build configuration
+- [docs/HTTPS_SETUP.md](docs/HTTPS_SETUP.md) - HTTPS configuration and certificate management guide
 
 ## Common Issues
 
 - **Service discovery not working**: Verify `nginx.react-app.local` resolves in HAProxy container, check Service Discovery namespace
 - **HAProxy can't reach internet**: Ensure public subnets have IGW route in route table
 - **Nginx can't reach ECR**: Verify NAT Gateway is provisioned and private route table has NAT route
+- **HTTPS certificate error**: Ensure `docker/certs/haproxy.pem` exists and is properly copied to container (see [docs/HTTPS_SETUP.md](docs/HTTPS_SETUP.md))
 
 ## Service Discovery Best Practices
 

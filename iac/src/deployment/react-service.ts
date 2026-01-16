@@ -65,7 +65,7 @@ export class ReactService extends Service {
       clusterArn: ecsCluster.arn,
       serviceName: "haproxy-service",
       imageUri: haproxyImageUri,
-      containerPort: 8080,
+      containerPort: 443,
       containerMemory: 512,
       containerCpu: 256,
       desiredCount: 1,
