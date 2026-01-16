@@ -6,12 +6,12 @@ on:
       - main
       - master
     paths:
-      - 'docker/Dockerfile.haproxy'
-      - 'docker/Dockerfile.nginx'
-      - 'docker/haproxy.cfg'
-      - 'docker/nginx.conf'
-      - 'scripts/build-and-push-*.sh'
-      - '.github/workflows/build-push-images.yml'
+      - "docker/Dockerfile.haproxy"
+      - "docker/Dockerfile.nginx"
+      - "docker/haproxy.cfg"
+      - "docker/nginx.conf"
+      - "scripts/build-and-push-*.sh"
+      - ".github/workflows/build-push-images.yml"
   workflow_dispatch:
 
 permissions:
@@ -93,7 +93,7 @@ jobs:
         if: steps.dockerfile-check.outputs.changed == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install Pulumi
         if: steps.dockerfile-check.outputs.changed == 'true'
@@ -118,20 +118,22 @@ jobs:
       - name: Build and push ${{ matrix.service.name }} image
         if: steps.dockerfile-check.outputs.changed == 'true'
         env:
-          IMAGE_TAG: ${{ github.sha }}
           PULUMI_STACK: ${{ env.PULUMI_STACK }}
           AWS_REGION: ${{ env.AWS_REGION }}
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           chmod +x ${{ matrix.service.script }}
-          IMAGE_TAG=$IMAGE_TAG ${{ matrix.service.script }}
+          IMAGE_TAG=${GITHUB_SHA:0:7} ${{ matrix.service.script }}
 
       - name: Notify on failure
         if: failure()
         run: |
-          echo "Failed to build and push ${{ matrix.service.name }} image"
+          SHORT_SHA="${{ github.sha }}"
+          echo "Failed to build and push ${{ matrix.service.name }} image with tag: ${SHORT_SHA:0:7}"
 
       - name: Notify on success
         if: success()
         run: |
-          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${{ github.sha }}"
+          SHORT_SHA="${{ github.sha }}"
+          echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${SHORT_SHA:0:7}"
