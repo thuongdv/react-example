@@ -23,7 +23,62 @@ env:
   PULUMI_STACK: ${{ secrets.PULUMI_STACK || 'thuongdv/iac-react-example/dev' }}
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      haproxy-changed: ${{ steps.changes.outputs.haproxy-changed }}
+      nginx-changed: ${{ steps.changes.outputs.nginx-changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        id: changes
+        run: |
+          # Force rebuild on manual workflow_dispatch trigger
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "haproxy-changed=true" >> "$GITHUB_OUTPUT"
+            echo "nginx-changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Determine the base commit for comparison
+          # For pull requests, use the merge base with the target branch
+          # For push events, use HEAD~1 if it exists, otherwise assume changes (first commit)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_commit="${{ github.base_ref }}"
+            git fetch origin "$base_commit" --depth=1
+            base_sha=$(git rev-parse "origin/$base_commit")
+          else
+            # For push events, check if HEAD~1 exists
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              base_sha="HEAD~1"
+            else
+              # First commit on the branch—conservatively build everything
+              echo "haproxy-changed=true" >> "$GITHUB_OUTPUT"
+              echo "nginx-changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          # Check HAProxy-related files
+          if git diff "$base_sha" HEAD --name-only | grep -qE "^(docker/Dockerfile\.haproxy|docker/haproxy\.cfg|scripts/build-and-push-haproxy\.sh|\.github/workflows/build-push-images\.yml)$"; then
+            echo "haproxy-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "haproxy-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Check Nginx-related files
+          if git diff "$base_sha" HEAD --name-only | grep -qE "^(docker/Dockerfile\.nginx|docker/nginx\.conf|scripts/build-and-push-nginx\.sh|\.github/workflows/build-push-images\.yml)$"; then
+            echo "nginx-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "nginx-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push:
+    needs: check-changes
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -33,10 +88,12 @@ jobs:
             dockerfile: docker/Dockerfile.haproxy
             script: scripts/build-and-push-haproxy.sh
             pulumi-output: haproxyRepoUrl
+            changed: ${{ needs.check-changes.outputs.haproxy-changed }}
           - name: nginx
             dockerfile: docker/Dockerfile.nginx
             script: scripts/build-and-push-nginx.sh
             pulumi-output: nginxRepoUrl
+            changed: ${{ needs.check-changes.outputs.nginx-changed }}
 
     steps:
       - name: Checkout code
@@ -47,76 +104,41 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+        if: matrix.service.changed == 'true'
 
-      - name: Check if ${{ matrix.service.name }} Dockerfile changed
-        id: dockerfile-check
+      - name: Skip build for ${{ matrix.service.name }} (no changes detected)
+        if: matrix.service.changed == 'false'
         run: |
-          # Force build on manual workflow_dispatch trigger
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual workflow_dispatch trigger detected; forcing build."
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Ensure a previous commit exists before diffing against HEAD~1
-          if ! git rev-parse HEAD~1 >/dev/null 2>&1; then
-            echo "No previous commit (HEAD~1) found; treating ${{ matrix.service.name }} artifacts as changed."
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Check for changes in Dockerfiles, service-specific config, or build scripts
-          service_name="${{ matrix.service.name }}"
-          config_path=""
-
-          if [ "$service_name" = "haproxy" ]; then
-            config_path="docker/haproxy.cfg"
-          elif [ "$service_name" = "nginx" ]; then
-            config_path="docker/nginx.conf"
-          fi
-
-          # Build a regex that includes the config for the current service (if applicable)
-          if [ -n "$config_path" ]; then
-            pattern="^(${config_path}|docker/Dockerfile\.${service_name}|scripts/build-and-push-${service_name}\.sh)$"
-          else
-            # For services without specific config files, check only Dockerfile and script
-            pattern="^(docker/Dockerfile\.${service_name}|scripts/build-and-push-${service_name}\.sh)$"
-          fi
-
-          if git diff HEAD~1 HEAD --name-only | grep -qE "$pattern"; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "No changes detected for ${{ matrix.service.name }}; skipping build."
 
       - name: Set up Node.js
-        if: steps.dockerfile-check.outputs.changed == 'true'
+        if: matrix.service.changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "18"
 
       - name: Install Pulumi
-        if: steps.dockerfile-check.outputs.changed == 'true'
+        if: matrix.service.changed == 'true'
         run: |
           curl -fsSL https://get.pulumi.com | sh
           echo "$HOME/.pulumi/bin" >> $GITHUB_PATH
 
       - name: Set up Docker
-        if: steps.dockerfile-check.outputs.changed == 'true'
+        if: matrix.service.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Install npm dependencies
-        if: steps.dockerfile-check.outputs.changed == 'true'
+        if: matrix.service.changed == 'true'
         run: npm install
 
       - name: Install Pulumi dependencies
-        if: steps.dockerfile-check.outputs.changed == 'true'
+        if: matrix.service.changed == 'true'
         run: |
           cd iac
           npm install
 
       - name: Generate self-signed certificates
-        if: steps.dockerfile-check.outputs.changed == 'true' && matrix.service.name == 'haproxy'
+        if: matrix.service.changed == 'true' && matrix.service.name == 'haproxy'
         run: |
           mkdir -p docker/certs
           openssl req -x509 -newkey rsa:2048 \
@@ -126,7 +148,7 @@ jobs:
           cat docker/certs/haproxy-cert.pem docker/certs/haproxy-key.pem > docker/certs/haproxy.pem
 
       - name: Build and push ${{ matrix.service.name }} image
-        if: steps.dockerfile-check.outputs.changed == 'true'
+        if: matrix.service.changed == 'true'
         env:
           PULUMI_STACK: ${{ env.PULUMI_STACK }}
           AWS_REGION: ${{ env.AWS_REGION }}
@@ -137,13 +159,13 @@ jobs:
           IMAGE_TAG=${GITHUB_SHA:0:7} ${{ matrix.service.script }}
 
       - name: Notify on failure
-        if: failure()
+        if: failure() && matrix.service.changed == 'true'
         run: |
           SHORT_SHA="${{ github.sha }}"
           echo "Failed to build and push ${{ matrix.service.name }} image with tag: ${SHORT_SHA:0:7}"
 
       - name: Notify on success
-        if: success()
+        if: success() && matrix.service.changed == 'true'
         run: |
           SHORT_SHA="${{ github.sha }}"
           echo "Successfully built and pushed ${{ matrix.service.name }} image with tag: ${SHORT_SHA:0:7}"
