@@ -64,14 +64,14 @@ jobs:
           fi
 
           # Check HAProxy-related files
-          if git diff "$base_sha" HEAD --name-only | grep -qE "^(docker/Dockerfile\.haproxy|docker/haproxy\.cfg|scripts/build-and-push-haproxy\.sh|\.github/workflows/build-push-images\.yml)$"; then
+          if git diff "$base_sha" HEAD --name-only | grep -qE "^(docker/Dockerfile\.haproxy|docker/haproxy\.cfg|scripts/build-and-push-haproxy\.sh|\.github/workflows/build-push-images\.yml)"; then
             echo "haproxy-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "haproxy-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # Check Nginx-related files
-          if git diff "$base_sha" HEAD --name-only | grep -qE "^(docker/Dockerfile\.nginx|docker/nginx\.conf|scripts/build-and-push-nginx\.sh|\.github/workflows/build-push-images\.yml)$"; then
+          if git diff "$base_sha" HEAD --name-only | grep -qE "^(docker/Dockerfile\.nginx|docker/nginx\.conf|scripts/build-and-push-nginx\.sh|\.github/workflows/build-push-images\.yml)"; then
             echo "nginx-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "nginx-changed=false" >> "$GITHUB_OUTPUT"
@@ -79,6 +79,7 @@ jobs:
 
   build-and-push:
     needs: check-changes
+    if: needs.check-changes.outputs.haproxy-changed == 'true' || needs.check-changes.outputs.nginx-changed == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -105,11 +106,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
         if: matrix.service.changed == 'true'
-
-      - name: Skip build for ${{ matrix.service.name }} (no changes detected)
-        if: matrix.service.changed == 'false'
-        run: |
-          echo "No changes detected for ${{ matrix.service.name }}; skipping build."
 
       - name: Set up Node.js
         if: matrix.service.changed == 'true'
