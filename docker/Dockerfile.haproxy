@@ -6,12 +6,12 @@ COPY docker/haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 # Copy certificates - ensure docker/certs directory exists before building
 # Run: mkdir -p docker/certs && cd docker/certs && \
 #      openssl req -x509 -newkey rsa:2048 -keyout haproxy-key.pem -out haproxy-cert.pem \
-#      -days 365 -nodes -subj "/CN=localhost" && \
+#      -days 365 -nodes -subj "/CN=nginx.react-app.local" && \
 #      cat haproxy-cert.pem haproxy-key.pem > haproxy.pem
 COPY docker/certs/haproxy.pem /usr/local/etc/haproxy/certs/haproxy.pem
 
-# Expose ports (80 for HTTP redirect, 443 for HTTPS)
-EXPOSE 80 443
+# Expose ports (8080 for HTTP redirect, 8443 for HTTPS)
+EXPOSE 8080 8443
 
 # Run HAProxy
-CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg", "-db"]
+CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]

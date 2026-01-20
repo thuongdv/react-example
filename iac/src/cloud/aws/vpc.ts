@@ -143,14 +143,14 @@ export function createVpc(config: VpcConfig = {}): VpcResources {
     ingress: [
       {
         protocol: "tcp",
-        fromPort: 80,
-        toPort: 80,
+        fromPort: 8080,
+        toPort: 8080,
         cidrBlocks: ["0.0.0.0/0"],
       },
       {
         protocol: "tcp",
-        fromPort: 443,
-        toPort: 443,
+        fromPort: 8443,
+        toPort: 8443,
         cidrBlocks: ["0.0.0.0/0"],
       },
       {
