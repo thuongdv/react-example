@@ -4,6 +4,7 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+  "terminal.integrated.suggest.enabled": true,
   "cSpell.ignoreWords": [
     "unmark",
     "dotenv",
