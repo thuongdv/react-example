@@ -30,6 +30,7 @@ export class ReactService extends Service {
     });
 
     ecs.createEcsClusterCapacityProviders(ecsCluster);
+
     // Step 5: Create Service Discovery Service for Nginx
     const nginxServiceDiscovery = new aws.servicediscovery.Service(
       "nginx-discovery",

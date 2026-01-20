@@ -17,11 +17,6 @@ services:
     networks:
       - react-app-network
     restart: unless-stopped
-    logs:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
   haproxy:
     build:
@@ -45,11 +40,6 @@ services:
     networks:
       - react-app-network
     restart: unless-stopped
-    logs:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 networks:
   react-app-network:
