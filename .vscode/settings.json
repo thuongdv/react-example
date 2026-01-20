@@ -26,7 +26,8 @@
     "certs",
     "cnlocalhost",
     "ssrreactexample",
-    "keyout"
+    "keyout",
+    "healthcheck"
   ],
   "cSpell.ignorePaths": [
     "**/node_modules/**",
