@@ -1,8 +1,8 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-// Health check port preference: use port 80 when available for non-SSL health checks
-const PREFERRED_HEALTH_CHECK_PORT = 80;
+// Health check port preference: use port 8080 when available for non-SSL health checks
+const PREFERRED_HEALTH_CHECK_PORT = 8080;
 
 interface EcsClusterConfig {
   name?: string;
