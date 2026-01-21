@@ -14,4 +14,4 @@ COPY docker/certs/haproxy.pem /usr/local/etc/haproxy/certs/haproxy.pem
 EXPOSE 80 443
 
 # Run HAProxy
-CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg", "-db"]

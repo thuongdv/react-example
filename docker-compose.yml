@@ -6,8 +6,17 @@ services:
     container_name: react-app-nginx
     expose:
       - "80"
+    environment:
+      - NGINX_WORKER_PROCESSES=auto
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - react-app-network
+    restart: unless-stopped
 
   haproxy:
     build:
@@ -18,10 +27,23 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - nginx
+      nginx:
+        condition: service_healthy
+    environment:
+      - HAPROXY_CONFIG=/usr/local/etc/haproxy/haproxy.local.cfg
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
-        - react-app-network
+      - react-app-network
+    restart: unless-stopped
 
 networks:
   react-app-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
